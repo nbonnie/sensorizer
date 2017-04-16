@@ -1,0 +1,13 @@
+{
+  "name": "sensorizer",
+  "version": "0.0.1",
+  "description": "Manager sensors and IoT stuffs",
+  "author": "Noam Bonnie <you.name@example.org>",
+  "contributors": [{
+  "name": "Noam Bonnie",
+  "email": "foo.bar@example.com"
+}],
+  "dependencies": {
+    "mqtt": "*"
+  }
+}
