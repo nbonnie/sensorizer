@@ -46,7 +46,7 @@ var dataTimer = setInterval(
     function()
     {
         if (sendData) {
-            client.publish("data/" + deviceType + "/F1/A/3/16/2/3/" + deviceId, 
+            client.publish("data/" + deviceType + "/F1/A/3/16/2/" + deviceId, 
                            "[{timestamp: " + (new Date()).getTime() + ", ph: 6.3}]",
                            { retain: true }) // retain messages while we're disonnected. TODO: How do we limit storage? I think Store of MQTT client library.
         }
@@ -57,6 +57,9 @@ var dataTimer = setInterval(
 // Topic structure: <channel-type>/<device-type>/<farm-id>/<zone-id>/<shelf-id>/<tray-id>/<position>/<device-id>
 // TODO: This is a naive implementation. Client will be bombarded with all admin and control messages. 
 //       For actions on entire farm/zone we may want to loop through all farms/zones in the sender's side.
+//       We may also want to split control and keep-alive and info messages so only the controller listens to info
+//       and clients only listen to control requests.
+
 client.on("connect", function () {
     console.info("device " + deviceId + " (" + deviceType + ") connected to MQTT broker.");
     client.subscribe("admin/#");

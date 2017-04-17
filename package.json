@@ -8,6 +8,7 @@
   "email": "foo.bar@example.com"
 }],
   "dependencies": {
-    "mqtt": "*"
+    "mqtt": "*",
+    "express": "*"
   }
 }
