@@ -9,6 +9,7 @@
 }],
   "dependencies": {
     "mqtt": "*",
-    "express": "*"
+    "express": "*",
+    "config": "*"
   }
 }

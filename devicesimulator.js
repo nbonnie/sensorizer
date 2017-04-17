@@ -1,15 +1,16 @@
+var config = require("config");
 var mqtt = require("mqtt");
 
 var client  = mqtt.connect('mqtt://localhost')
 // TODO: Read device properties from configuration - including position, zone, farm etc.
 // TODO: Figure out if it makes sense to have the device ID in the topic or not.
-var deviceId   = "3FE52AB"; 
-var deviceType = "nutrients"; // TODO: ENUM for device types
-var farmId     = "F1";
-var zoneId     = "A";
-var shelfId    = "16";
-var trayId     = "2";
-var position   = "3";
+var deviceId   = config.get("deviceProperties.deviceId"); 
+var deviceType = config.get("deviceProperties.deviceType"); // TODO: ENUM for device types
+var farmId     = config.get("deviceProperties.farmId");
+var zoneId     = config.get("deviceProperties.zoneId");
+var shelfId    = config.get("deviceProperties.shelfId");
+var trayId     = config.get("deviceProperties.trayId");
+var position   = config.get("deviceProperties.position");
 
 var sendData = true;
 
@@ -46,7 +47,14 @@ var dataTimer = setInterval(
     function()
     {
         if (sendData) {
-            client.publish("data/" + deviceType + "/F1/A/3/16/2/" + deviceId, 
+            client.publish("data/" + 
+                            deviceType + "/" +
+                            farmId + "/" +
+                            zoneId + "/" + 
+                            shelfId + "/" + 
+                            trayId + "/" +
+                            position + "/" + 
+                            deviceId, 
                            "[{timestamp: " + (new Date()).getTime() + ", ph: 6.3}]",
                            { retain: true }) // retain messages while we're disonnected. TODO: How do we limit storage? I think Store of MQTT client library.
         }
