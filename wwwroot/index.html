@@ -2,18 +2,100 @@
 <html lang="en">
   <head>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
+    <!-- Doesn't seem to work with dynamically populated tables, will look into it later. script src="sorttable.js"></script --> 
+    <style> 
+    table {
+      border: 1px, solid, gainsboro;
+      border-collapse: collapse;
+    }
+
+    th {
+      background-color: green;
+      color: white;
+    }
+
+    th, td {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+
+    tr:nth-child(odd) {
+      background-color: #f2f2f2;
+    }
+
+    tr.alert {
+      background-color: red;
+      color: yellow
+    }
+
+    td {
+      font-family: monospace;
+      text-align: center;
+    }
+
+    body.normal {
+      font-family: sans-serif
+    }
+    </style>
     <script>
-      
-        $(document).ready(function()
-          {
-            console.log("Ready!");
-            $.get("/devices", function(data, status) {
-              $("#myTest").text(data);
+        $(document).ready(function() {
+            $("#myTest").text("Ready");
+//            $.get("/devices", function(data, status) {
+//              $("#myTest").text(data);
+//            })
+
+            var ctrlSocket = io.connect();
+            ctrlSocket.on("connect", function() {
+              console.log("connect");
             })
+
+            if (typeof ctrlSocket !== 'undefined') {
+                $("#myTest").text("got Connection");
+
+                ctrlSocket.on('devices', function (devices) {
+                    devices.forEach(function(element) {
+                      console.log("text: <tr id=\"" + element.deviceId + "\" class=\"" + (element.connected? "" : "alert") + "\">");
+                      var row = $("#" + element.deviceId);
+                      if (typeof row.val() === "undefined") {
+                          $("#devicesTable tr:last").after("<tr id=\"" + element.deviceId + "\" class=\"" + (element.connected? "" : "alert") + "\">" +
+                                                      "<td>" + element.deviceId + "</td>" + 
+                                                      "<td>" + element.deviceType + "</td>" +
+                                                      "<td>" + element.farmId + "</td>" +
+                                                      "<td>" + element.zoneId + "</td>" +
+                                                      "<td>" + element.shelfId + "</td>" +
+                                                      "<td>" + element.trayId + "</td>" +
+                                                      "<td>" + element.position + "</td>" +
+                                                      "<td>" + element.connected + "</td></tr>");
+                      }
+                      else {
+                          row.replaceWith("<tr id=\"" + element.deviceId + "\" class=\"" + (element.connected? "" : "alert") + "\">" +
+                                                      "<td>" + element.deviceId + "</td>" + 
+                                                      "<td>" + element.deviceType + "</td>" +
+                                                      "<td>" + element.farmId + "</td>" +
+                                                      "<td>" + element.zoneId + "</td>" +
+                                                      "<td>" + element.shelfId + "</td>" +
+                                                      "<td>" + element.trayId + "</td>" +
+                                                      "<td>" + element.position + "</td>" +
+                                                      "<td>" + element.connected + "</td></tr>");
+                      }
+
+                    }, this);
+                });
+            }
           });
+     
     </script>
   </head>
-  <body>
+  <body class="normal">
     <p id="myTest">hmmm</p>
+    <table id="devicesTable">
+      <thead>
+        <tr><th>ID</th><th>Type</th><th>Farm</th><th>Zone</th><th>Shelf</th><th>Tray</th><th>Position</th><th>connected</th></tr>
+      </thead>
+      <tbody class="data">
+
+      </tbody>
+    </table>
   </body>
 </html>

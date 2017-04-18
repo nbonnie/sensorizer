@@ -3,7 +3,8 @@ var farmutils = require("./farmutils");
 var mqtt = require("mqtt");
 
 var app = express();
-
+var httpServer = require('http').Server(app);
+var websockets = require('socket.io')(httpServer);
 var client  = mqtt.connect('mqtt://localhost');
 
 var webPort = 3000;
@@ -47,11 +48,11 @@ var registerPing = function(topic) {
         clearTimeout(devices[topic.deviceId].pingTimeout);
     }
 
-    devices[topic.deviceId].connected  = true;
+    devices[topic.deviceId].properties.connected  = true;
     devices[topic.deviceId].pingTimeout = setTimeout(
         function() {
             console.warn("Device " + topic.deviceId + " (" + topic.deviceType + ") is offline. ");
-            devices[topic.deviceId].connected = false;
+            devices[topic.deviceId].properties.connected = false;
         }
         , 10000); // Alert if we didn't hear from the device for 10 seconds.
 }
@@ -73,7 +74,7 @@ var handlePauseReq = function(req, res) {
     res.send(JSON.stringify({deviceId: req.params.deviceId, deviceType: req.params.deviceType}));
 }
 
-var getDevicesReq = function(req, res) {
+var getDevicesList = function() {
     var response = [];
 
     for(device in devices) {
@@ -82,13 +83,26 @@ var getDevicesReq = function(req, res) {
         }
     };
 
-    res.send(JSON.stringify(response));
+    return response;
 }
+var getDevicesReq = function(req, res) {
+    res.send(JSON.stringify(getDevicesList()));
+}
+
+
+httpServer.listen(webPort, function() {
+    console.info("Controller app started on port " + webPort);
+})
 
 app.use(express.static("wwwroot"));
 app.get("/pause/:deviceType/:farmId/:zoneId/:shelfId/:trayId/:position/:deviceId/:pause", handlePauseReq);
 app.get("/devices", getDevicesReq);
 
-app.listen(webPort, function() {
-    console.info("Controller app started on port " + webPort);
+
+websockets.on('connection', function(socket) {
+    console.log("Got new websocket connection");
 })
+
+setInterval(function() {
+    websockets.emit("devices", getDevicesList());
+}, 2000);

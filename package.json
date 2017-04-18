@@ -10,6 +10,7 @@
   "dependencies": {
     "mqtt": "*",
     "express": "*",
-    "config": "*"
+    "config": "*",
+    "socket.io: "*"
   }
 }
