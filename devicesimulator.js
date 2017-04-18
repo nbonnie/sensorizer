@@ -1,5 +1,6 @@
 var config = require("config");
 var mqtt = require("mqtt");
+var farmutils = require("./farmutils");
 
 var client  = mqtt.connect('mqtt://localhost')
 // TODO: Read device properties from configuration - including position, zone, farm etc.
@@ -15,20 +16,8 @@ var position   = config.get("deviceProperties.position");
 var sendData = true;
 
 // TODO: Add to a shared library
-var parseTopic = function(topic) {
-    var splitTopic = topic.split("/");
-
-    var result =  
-           { 
-             channelType: splitTopic[0],
-             deviceType:  splitTopic[1],
-             farmId:      splitTopic[2],
-             zoneId:      splitTopic[3],
-             shelfNo:     splitTopic[4],
-             trayNo:      splitTopic[5],
-             positionNo:  splitTopic[6],
-             deviceId:    splitTopic[7]
-           };
+var fromTopicStr = function(topic) {
+    var result = farmutils.parseTopic(topic);
 
     // TODO: Can do real wildcard.
     // We need to be able to subscribe to the entire hierarchy for cases such as disable all sensors in a tray,
@@ -61,6 +50,24 @@ var dataTimer = setInterval(
     }, 
     1000); // Interval
 
+var keepAliveTimer  = setInterval(
+    function()
+    {
+        if (sendData) {
+            client.publish("notify/" + 
+                            deviceType + "/" +
+                            farmId + "/" +
+                            zoneId + "/" + 
+                            shelfId + "/" + 
+                            trayId + "/" +
+                            position + "/" + 
+                            deviceId, 
+                           "{\"action\": \"ping\"}",
+                           { retain: true }) // retain messages while we're disonnected. TODO: How do we limit storage? I think Store of MQTT client library.
+        }
+    }, 
+    5000); // Interval
+
 // Types of channels: data, control, admin
 // Topic structure: <channel-type>/<device-type>/<farm-id>/<zone-id>/<shelf-id>/<tray-id>/<position>/<device-id>
 // TODO: This is a naive implementation. Client will be bombarded with all admin and control messages. 
@@ -91,7 +98,7 @@ client.on("error", function() {
 })
 
 client.on("message", function (topicStr, messageBuf) {
-    var topic = parseTopic(topicStr);
+    var topic = fromTopicStr(topicStr);
 
     if (topic.isActionable) {
         switch(topic.channelType) {
