@@ -20,7 +20,7 @@
       padding-right: 10px;
     }
 
-    tr:nth-child(odd) {
+    tr:nth-child(even) {
       background-color: #f2f2f2;
     }
 
@@ -34,11 +34,43 @@
       text-align: center;
     }
 
+    div.serverConnected {
+      font-family: sans-serif;
+      font-size: 16px;
+      color: green;
+      background-color: white
+    }
+
+    div.headline {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 18px;
+      color: black;
+    }
+
+    div.serverDisconnected {
+      font-family: sans-serif;
+      font-size: 16px;
+      color: red;
+      background-color: white
+    }
+
     body.normal {
       font-family: sans-serif
     }
     </style>
     <script>
+        var constructRow = function(element) {
+          return "<tr id=\"" + element.deviceId + "\" deviceStatus=" + (element.connected? "true" : "false") +    ">" +
+                                                      "<td><img src=\"/img/" + (element.connected? "online.png": "offline.png") + "\"></td>" +
+                                                      "<td>" + element.deviceId + "</td>" + 
+                                                      "<td>" + element.deviceType + "</td>" +
+                                                      "<td>" + element.farmId + "</td>" +
+                                                      "<td>" + element.zoneId + "</td>" +
+                                                      "<td>" + element.shelfId + "</td>" +
+                                                      "<td>" + element.trayId + "</td>" +
+                                                      "<td>" + element.position + "</td>" +
+                                                      "</tr>";
+        }
         $(document).ready(function() {
             $("#myTest").text("Ready");
 //            $.get("/devices", function(data, status) {
@@ -48,6 +80,20 @@
             var ctrlSocket = io.connect();
             ctrlSocket.on("connect", function() {
               console.log("connect");
+              $("#connectedText").removeClass("serverDisconnected");
+              $("#connectedText").addClass("serverConnected");
+              $("#connectedText").text("Connected to server");
+              $("#serverDisconnected").hide();
+              $("#serverConnected").show();
+            })
+
+            ctrlSocket.on("disconnect", function() {
+              console.log("disconnect");
+              //$("#connectedText").removedClass("serverConnected");
+              $("#connectedText").addClass("serverDisconnected");
+              $("#connectedText").text("Disconnected from server");
+              $("#serverConnected").hide();
+              $("#serverDisconnected").show();
             })
 
             if (typeof ctrlSocket !== 'undefined') {
@@ -55,29 +101,13 @@
 
                 ctrlSocket.on('devices', function (devices) {
                     devices.forEach(function(element) {
-                      console.log("text: <tr id=\"" + element.deviceId + "\" class=\"" + (element.connected? "" : "alert") + "\">");
                       var row = $("#" + element.deviceId);
+
                       if (typeof row.val() === "undefined") {
-                          $("#devicesTable tr:last").after("<tr id=\"" + element.deviceId + "\" class=\"" + (element.connected? "" : "alert") + "\">" +
-                                                      "<td>" + element.deviceId + "</td>" + 
-                                                      "<td>" + element.deviceType + "</td>" +
-                                                      "<td>" + element.farmId + "</td>" +
-                                                      "<td>" + element.zoneId + "</td>" +
-                                                      "<td>" + element.shelfId + "</td>" +
-                                                      "<td>" + element.trayId + "</td>" +
-                                                      "<td>" + element.position + "</td>" +
-                                                      "<td>" + element.connected + "</td></tr>");
+                          $("#devicesTable tr:last").after(constructRow(element));
                       }
-                      else {
-                          row.replaceWith("<tr id=\"" + element.deviceId + "\" class=\"" + (element.connected? "" : "alert") + "\">" +
-                                                      "<td>" + element.deviceId + "</td>" + 
-                                                      "<td>" + element.deviceType + "</td>" +
-                                                      "<td>" + element.farmId + "</td>" +
-                                                      "<td>" + element.zoneId + "</td>" +
-                                                      "<td>" + element.shelfId + "</td>" +
-                                                      "<td>" + element.trayId + "</td>" +
-                                                      "<td>" + element.position + "</td>" +
-                                                      "<td>" + element.connected + "</td></tr>");
+                      else if (row.attr("deviceStatus") !== element.connected.toString()) {
+                          row.replaceWith(constructRow(element));
                       }
 
                     }, this);
@@ -88,10 +118,21 @@
     </script>
   </head>
   <body class="normal">
-    <p id="myTest">hmmm</p>
+    <table><tr>
+      <td><img src="/img/logo.png" height="50"></td>
+      <td><div class="headline">Farm<br/>Controller</div>
+      <td><div id="serverConnected">
+        <img src="/img/connected.png">
+      </div>
+      <div id="serverDisconnected">
+        <img src="/img/disconnected.png">
+      </div>
+      </td>
+      <td><div id="connectedText">Connected</div></td></tr>
+    </table>
     <table id="devicesTable">
       <thead>
-        <tr><th>ID</th><th>Type</th><th>Farm</th><th>Zone</th><th>Shelf</th><th>Tray</th><th>Position</th><th>connected</th></tr>
+        <tr><th>Status</th><th>ID</th><th>Type</th><th>Farm</th><th>Zone</th><th>Shelf</th><th>Tray</th><th>Position</th></tr>
       </thead>
       <tbody class="data">
 

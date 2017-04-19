@@ -3,7 +3,6 @@ var mqtt = require("mqtt");
 var farmutils = require("./farmutils");
 
 var client  = mqtt.connect('mqtt://localhost')
-// TODO: Read device properties from configuration - including position, zone, farm etc.
 // TODO: Figure out if it makes sense to have the device ID in the topic or not.
 var deviceId   = config.get("deviceProperties.deviceId"); 
 var deviceType = config.get("deviceProperties.deviceType"); // TODO: ENUM for device types
