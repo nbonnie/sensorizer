@@ -21,12 +21,13 @@ var fromTopicStr = function(topic) {
     // TODO: Can do real wildcard.
     // We need to be able to subscribe to the entire hierarchy for cases such as disable all sensors in a tray,
     // upgrade all cameras etc. MQTT does not allow for publishing to wildcards. That's where the asterisk comes in handy.
-    result.isActionable = result.deviceType === deviceType || result.deviceType === "*" &&
-                          result.farmId === farmId         || result.farmId === "*" &&
-                          result.zoneId === zoneId         || result.zoneId === "*" &&
-                          result.shelfId === shelfId       || result.shelfId === "*" ||
-                          result.trayId === trayId         || result.trayId === "*" ||
-                          result.position === position     || result.position === "*";
+    result.isActionable = (result.deviceType === deviceType || result.deviceType === "*") &&
+                          (result.farmId === farmId         || result.farmId === "*") &&
+                          (result.zoneId === zoneId         || result.zoneId === "*") &&
+                          (result.shelfId === shelfId       || result.shelfId === "*") &&
+                          (result.trayId === trayId         || result.trayId === "*") &&
+                          (result.position === position     || result.position === "*") && 
+                          (result.deviceId === deviceId     || result.deviceId === "*");
 
     return result;
 }
@@ -52,18 +53,16 @@ var dataTimer = setInterval(
 var keepAliveTimer  = setInterval(
     function()
     {
-        if (sendData) {
-            client.publish("notify/" + 
-                            deviceType + "/" +
-                            farmId + "/" +
-                            zoneId + "/" + 
-                            shelfId + "/" + 
-                            trayId + "/" +
-                            position + "/" + 
-                            deviceId, 
-                           "{\"action\": \"ping\"}",
-                           { retain: true }) // retain messages while we're disonnected. TODO: How do we limit storage? I think Store of MQTT client library.
-        }
+        client.publish("notify/" + 
+                        deviceType + "/" +
+                        farmId + "/" +
+                        zoneId + "/" + 
+                        shelfId + "/" + 
+                        trayId + "/" +
+                        position + "/" + 
+                        deviceId, 
+                        "{\"action\": \"ping\", \"sendingData\": " + sendData + "}",
+                        { retain: true }) // retain messages while we're disonnected. TODO: How do we limit storage? I think Store of MQTT client library.
     }, 
     5000); // Interval
 

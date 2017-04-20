@@ -3,8 +3,8 @@
         "deviceType": "nutrients",
         "farmId": "F1",
         "zoneId": "A",
-        "shelfId": 3,
-        "trayId": 2,
-        "position": 16
+        "shelfId": "3",
+        "trayId": "2",
+        "position": "16"
     }
 }

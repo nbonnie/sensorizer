@@ -59,9 +59,18 @@
     }
     </style>
     <script>
+        // TODO: UGLY! Currently storing information on the TR element. Have a proper map for this.
+        // TODO: UGLY! Currently relying on pause/resume button display based on data coming from ping. 
+        //             Either send an ack for the action or use some UI element switching to have a better UX
         var constructRow = function(element) {
-          return "<tr id=\"" + element.deviceId + "\" deviceStatus=" + (element.connected? "true" : "false") +    ">" +
+            var tr = 
+                  "<tr id=\"" + element.deviceId + "\"" +
+                    " deviceConnected=" + (element.connected? "true" : "false") + 
+                    " sendingData=\"" + (element.sendingData? "true" : "false") + "\"" +
+                    " devicePath=\"" + element.deviceType + "/" + element.farmId + "/" + element.zoneId + "/" + element.shelfId + "/" + element.trayId + "/" + element.position +"\">" +
                                                       "<td><img src=\"/img/" + (element.connected? "online.png": "offline.png") + "\"></td>" +
+                                                      "<td><img src=\"/img/" + (element.sendingData? "pause.png": "play.png") + "\" height=20 " + 
+                                                      "onclick='setDataState(\"" + element.deviceId + "\"," + element.sendingData + ")'" + "></td>" +
                                                       "<td>" + element.deviceId + "</td>" + 
                                                       "<td>" + element.deviceType + "</td>" +
                                                       "<td>" + element.farmId + "</td>" +
@@ -70,16 +79,14 @@
                                                       "<td>" + element.trayId + "</td>" +
                                                       "<td>" + element.position + "</td>" +
                                                       "</tr>";
+            console.log(tr);
+            return tr;      
         }
         $(document).ready(function() {
-            $("#myTest").text("Ready");
-//            $.get("/devices", function(data, status) {
-//              $("#myTest").text(data);
-//            })
 
             var ctrlSocket = io.connect();
+
             ctrlSocket.on("connect", function() {
-              console.log("connect");
               $("#connectedText").removeClass("serverDisconnected");
               $("#connectedText").addClass("serverConnected");
               $("#connectedText").text("Connected to server");
@@ -88,8 +95,6 @@
             })
 
             ctrlSocket.on("disconnect", function() {
-              console.log("disconnect");
-              //$("#connectedText").removedClass("serverConnected");
               $("#connectedText").addClass("serverDisconnected");
               $("#connectedText").text("Disconnected from server");
               $("#serverConnected").hide();
@@ -97,8 +102,6 @@
             })
 
             if (typeof ctrlSocket !== 'undefined') {
-                $("#myTest").text("got Connection");
-
                 ctrlSocket.on('devices', function (devices) {
                     devices.forEach(function(element) {
                       var row = $("#" + element.deviceId);
@@ -106,7 +109,8 @@
                       if (typeof row.val() === "undefined") {
                           $("#devicesTable tr:last").after(constructRow(element));
                       }
-                      else if (row.attr("deviceStatus") !== element.connected.toString()) {
+                      else if (row.attr("deviceConnected") !== element.connected.toString() ||
+                               row.attr("sendingData") !== element.sendingData.toString()) {
                           row.replaceWith(constructRow(element));
                       }
 
@@ -115,6 +119,13 @@
             }
           });
      
+    </script>
+    <script>
+        var setDataState = function(deviceId, shouldPause) {
+            var devicePath = $("#" + deviceId).attr("devicePath");
+            console.log("pause request: " + "/pause/" + devicePath + "/" + deviceId + "/" + shouldPause);
+            $.ajax({url: "/pause/" + devicePath + "/" + deviceId + "/" + shouldPause});
+        }
     </script>
   </head>
   <body class="normal">
@@ -132,7 +143,7 @@
     </table>
     <table id="devicesTable">
       <thead>
-        <tr><th>Status</th><th>ID</th><th>Type</th><th>Farm</th><th>Zone</th><th>Shelf</th><th>Tray</th><th>Position</th></tr>
+        <tr><th>Status</th><th>Send Data</th><th>ID</th><th>Type</th><th>Farm</th><th>Zone</th><th>Shelf</th><th>Tray</th><th>Position</th></tr>
       </thead>
       <tbody class="data">
 

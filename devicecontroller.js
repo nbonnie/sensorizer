@@ -24,7 +24,7 @@ client.on('message', function (topicStr, message) {
             
             switch(notification.action) {
                 case "ping":
-                    registerPing(topic);
+                    registerPing(topic, message.toString());
                     break;
                 default:
                     console.warn("Unknown notification action " + payload.action)
@@ -35,7 +35,10 @@ client.on('message', function (topicStr, message) {
     }
 })
 
-var registerPing = function(topic) {
+// Handle ping messages from devices
+var registerPing = function(topic, messageStr) {
+
+    var message = JSON.parse(messageStr);
 
     if (typeof devices[topic.deviceId] === 'undefined') {
         // New device. Add it to the devices list.
@@ -44,21 +47,25 @@ var registerPing = function(topic) {
         console.info("Device " + topic.deviceId + " (" + topic.deviceType + ") added.");
     }
     else {
-        // Existing device - delete the current timeout and set a new one.
+        // Existing device - clear the current disconnect timeout.
         clearTimeout(devices[topic.deviceId].pingTimeout);
     }
 
-    devices[topic.deviceId].properties.connected  = true;
+    // Set device status
+    devices[topic.deviceId].properties.connected   = true;
+    devices[topic.deviceId].properties.sendingData = message.sendingData;
+
+    // Set device status to disconnected if we haven't heard from it for more than 10 seconds.
     devices[topic.deviceId].pingTimeout = setTimeout(
         function() {
             console.warn("Device " + topic.deviceId + " (" + topic.deviceType + ") is offline. ");
             devices[topic.deviceId].properties.connected = false;
         }
-        , 10000); // Alert if we didn't hear from the device for 10 seconds.
+        , 10000); 
 }
 
 var handlePauseReq = function(req, res) {
-    console.log("pause request: ", req.params);
+    console.log("Received pause request for device: ", req.params.deviceId);
 
     client.publish("control/" + 
                     req.params.deviceType + "/" +
