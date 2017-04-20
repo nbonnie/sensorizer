@@ -11,6 +11,6 @@
     "mqtt": "*",
     "express": "*",
     "config": "*",
-    "socket.io: "*"
+    "socket.io": "*"
   }
 }
