@@ -129,7 +129,4 @@ client.on("message", function (topicStr, messageBuf) {
             
         }
     }
-    else {
-        console.log("message on topic " + topicStr + " is not actionable: ", topic, messageBuf.toString());
-    }
 })

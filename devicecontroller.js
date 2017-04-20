@@ -44,11 +44,16 @@ var registerPing = function(topic, messageStr) {
         // New device. Add it to the devices list.
         devices[topic.deviceId] = {};
         devices[topic.deviceId].properties = topic;
+        devices[topic.deviceId].properties.connected = false; // Will be set to true momentarily. For now set it to false so we can issue a message that it's gone online.
         console.info("Device " + topic.deviceId + " (" + topic.deviceType + ") added.");
     }
     else {
         // Existing device - clear the current disconnect timeout.
         clearTimeout(devices[topic.deviceId].pingTimeout);
+    }
+
+    if (!devices[topic.deviceId].properties.connected) {
+        console.warn("Device " + topic.deviceId + " (" + topic.deviceType + ") is online. ");
     }
 
     // Set device status
