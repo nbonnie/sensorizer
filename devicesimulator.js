@@ -12,7 +12,37 @@ var shelfId    = config.get("deviceProperties.shelfId");
 var trayId     = config.get("deviceProperties.trayId");
 var position   = config.get("deviceProperties.position");
 
+// Whether sensor is reporting measurements or not
 var sendData = true;
+
+// TODO: From configuration
+var maxPh = 6.3;
+var minPh = 5.8;
+
+var currentPh = maxPh; // Will come from the sensor
+
+// Simulate nutrient depletion and replenishing
+var depletionRate = 0.03; // We'll lose 0.03 every second
+var replenishRate = 0.06; // When valve is open we gain 0.06 every second;
+var valveOpen = false;    // When the valve is open we add nutrients to reduce PH.
+
+// Simluate the depletion and valve replenishing
+var depletionTime = setInterval(function() {
+    currentPh += depletionRate;
+
+    if (valveOpen) {
+        currentPh -= replenishRate;
+    }
+}, 1000);
+
+var phReader = setInterval(function() {
+    if (currentPh >= maxPh) {
+        valveOpen = true;  // We need replenishing - open the valve
+    }
+    else if (currentPh <= minPh) {
+        valveOpen = false; // Close the valve - we got to the lowest allowed Ph
+    }
+}, 1000);
 
 // TODO: Add to a shared library
 var fromTopicStr = function(topic) {
@@ -44,7 +74,7 @@ var dataTimer = setInterval(
                             trayId + "/" +
                             position + "/" + 
                             deviceId, 
-                           "[{timestamp: " + (new Date()).getTime() + ", ph: 6.3}]",
+                           "[{timestamp: " + (new Date()).getTime() + ", ph: " + currentPh + "}]",
                            { retain: true }) // retain messages while we're disonnected. TODO: How do we limit storage? I think Store of MQTT client library.
         }
     }, 
@@ -66,13 +96,35 @@ var keepAliveTimer  = setInterval(
     }, 
     5000); // Interval
 
-// Types of channels: data, control, admin
+var setConfiguration = function(deviceConfig) {
+    // Sanity - but be permissive in terms of ignoring configuration values
+    // we don't care about. It will allow us to send the same configuration to
+    // multiple devices of different types/versions in a single command.
+    if (typeof deviceConfig.minPh !== "undefined" && 
+        typeof deviceConfig.maxPh !== "undefined") {
+        if (deviceConfig.minPh > deviceConfig.maxPh) {
+            console.error("Invalid configuration: ", deviceConfig)
+        }
+    }
+    
+    if (typeof deviceConfig.minPh !== "undefined") {
+        minPh = deviceConfig.minPh;
+    }
+
+    if (typeof deviceConfig.maxPh !== "undefined") {
+        maxPh = deviceConfig.maxPh;
+    }
+}
+// Types of channels: 
+//      - data:    Readings from sensors
+//      - control: Control sensors - pause/resume etc.
+//      - notify:  Sensor notification to controller (keep-alive). This mandates its own channel to refrain from having too 
+//                 many messages on the control channel.
+//      - admin:   Upgrade software (anything else? maybe can be combined with control)
+//
 // Topic structure: <channel-type>/<device-type>/<farm-id>/<zone-id>/<shelf-id>/<tray-id>/<position>/<device-id>
 // TODO: This is a naive implementation. Client will be bombarded with all admin and control messages. 
 //       For actions on entire farm/zone we may want to loop through all farms/zones in the sender's side.
-//       We may also want to split control and keep-alive and info messages so only the controller listens to info
-//       and clients only listen to control requests.
-
 client.on("connect", function () {
     console.info("device " + deviceId + " (" + deviceType + ") connected to MQTT broker.");
     client.subscribe("admin/#");
@@ -118,6 +170,11 @@ client.on("message", function (topicStr, messageBuf) {
                         case ("resume"): 
                             console.info("Resuming data publishing. [deviceId: " + deviceId + "]");
                             sendData = true;
+                            break;
+                        case("configure"):
+                            console.info("New device configuration. [deviceId: " + deviceId + "]");
+                            // Params format for config: {"minPh": 6.1, "maxPh": 7.0}
+                            setConfiguration(element.params);
                             break;
                         default:
                             console.log("Not acting on " + element.command + " command.")

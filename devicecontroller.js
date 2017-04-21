@@ -97,10 +97,31 @@ var getDevicesList = function() {
 
     return response;
 }
+
 var getDevicesReq = function(req, res) {
     res.send(JSON.stringify(getDevicesList()));
 }
 
+// Possibly nicer solution would be to simply notify the device there's a new configuration.
+// The device would then access a farm management server to pull the new configuration.
+var handleSetConfig = (function(req, res) {
+    console.log("Received configure request for device: ", req.params.deviceId);
+
+    var controlMessage = [{command: "configure", params: req.query}];
+
+    client.publish("control/" + 
+                    req.params.deviceType + "/" +
+                    req.params.farmId + "/" + 
+                    req.params.zoneId + "/" +
+                    req.params.shelfId + "/" +
+                    req.params.trayId + "/" + 
+                    req.params.position + "/" + 
+                    req.params.deviceId, 
+                    JSON.stringify(controlMessage), // req.query returns the query string in an object format
+                    { retain: true }); // retain messages while we're disonnected. TODO: How do we limit storage? I think Store of MQTT client library.
+
+    res.status(200).end();
+});
 
 httpServer.listen(webPort, function() {
     console.info("Controller app started on port " + webPort);
@@ -108,6 +129,7 @@ httpServer.listen(webPort, function() {
 
 app.use(express.static("wwwroot"));
 app.get("/pause/:deviceType/:farmId/:zoneId/:shelfId/:trayId/:position/:deviceId/:pause", handlePauseReq);
+app.get("/configure/:deviceType/:farmId/:zoneId/:shelfId/:trayId/:position/:deviceId", handleSetConfig); // TODO: Maybe POST is more appropriate?
 app.get("/devices", getDevicesReq);
 
 
