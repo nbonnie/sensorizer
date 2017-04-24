@@ -69,7 +69,7 @@
                     " sendingData=\"" + (element.sendingData? "true" : "false") + "\"" +
                     " devicePath=\"" + element.deviceType + "/" + element.farmId + "/" + element.zoneId + "/" + element.shelfId + "/" + element.trayId + "/" + element.position +"\">" +
                                                       "<td><img src=\"/img/" + (element.connected? "online.png": "offline.png") + "\"></td>" +
-                                                      "<td><img src=\"/img/" + (element.sendingData? "pause.png": "play.png") + "\" height=20 " + 
+                                                      "<td><img src=\"/img/" + (element.sendingData? "pause.png": "play.png") + "\" height=20 metaType=\"pauseres\"" + 
                                                       "onclick='setDataState(\"" + element.deviceId + "\"," + element.sendingData + ")'" + "></td>" +
                                                       "<td>" + element.deviceId + "</td>" + 
                                                       "<td>" + element.deviceType + "</td>" +
@@ -103,6 +103,7 @@
 
             if (typeof ctrlSocket !== 'undefined') {
                 ctrlSocket.on('devices', function (devices) {
+                    // Refresh the devices table
                     devices.forEach(function(element) {
                       var row = $("#" + element.deviceId);
 
@@ -124,6 +125,8 @@
         var setDataState = function(deviceId, shouldPause) {
             var devicePath = $("#" + deviceId).attr("devicePath");
             console.log("pause request: " + "/pause/" + devicePath + "/" + deviceId + "/" + shouldPause);
+            $("#" + deviceId).find("[metaType='pauseres']").attr("src", "img/loading.gif");
+            console.log($("#" + deviceId).find("[metaType='pauseres']").attr("src"));
             $.ajax({url: "/pause/" + devicePath + "/" + deviceId + "/" + shouldPause});
         }
     </script>
